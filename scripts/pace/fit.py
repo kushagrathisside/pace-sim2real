@@ -2,7 +2,7 @@
 # Author: Filip Bjelonic
 # Licensed under the Apache License 2.0
 
-"""Script to run an environment with zero action agent."""
+"""Script to identify the PACE parameters with CMA-ES in Isaac Lab."""
 
 """Launch Isaac Sim Simulator first."""
 
@@ -34,10 +34,12 @@ from isaaclab_tasks.utils import parse_env_cfg
 import pace_sim2real.tasks  # noqa: F401
 from pace_sim2real.utils import project_root
 from pace_sim2real import CMAESOptimizer
+from pace_sim2real.backends.isaac import IsaacLabBackend
+from pace_sim2real.core import fit
 
 
 def main():
-    """Zero actions agent with Isaac Lab environment."""
+    """Identify the PACE parameters of the task's robot with Isaac Lab."""
     # parse configuration
     env_cfg = parse_env_cfg(
         args_cli.task, device=args_cli.device, num_envs=args_cli.num_envs
@@ -49,24 +51,15 @@ def main():
     print(f"[INFO]: Gym observation space: {env.observation_space}")
     print(f"[INFO]: Gym action space: {env.action_space}")
 
-    # Create optimization
-    bounds_params = env_cfg.sim2real.bounds_params.to(env.unwrapped.device)
-    articulation = env.unwrapped.scene["robot"]
+    # one environment per CMA-ES candidate
     joint_order = env_cfg.sim2real.joint_order
-    sim_joint_ids = torch.tensor([articulation.joint_names.index(name) for name in joint_order], device=env.unwrapped.device)
+    backend = IsaacLabBackend(env, joint_order)
+    bounds_params = env_cfg.sim2real.bounds_params.to(env.unwrapped.device)
 
     data_file = project_root() / "data" / env_cfg.sim2real.data_dir
     log_dir = project_root() / "logs" / "pace" / env_cfg.sim2real.robot_name
 
     data = torch.load(data_file)
-    time_data = data["time"].to(env.unwrapped.device)
-    target_dof_pos = data["des_dof_pos"].to(env.unwrapped.device)
-    measured_dof_pos = data["dof_pos"].to(env.unwrapped.device)
-
-    initial_dof_pos = measured_dof_pos[0, :].unsqueeze(0).repeat(env.unwrapped.num_envs, 1)
-
-    time_steps = time_data.shape[0]
-    sim_dt = env.unwrapped.sim.cfg.dt
 
     opt = CMAESOptimizer(
         bounds=bounds_params,
@@ -83,35 +76,12 @@ def main():
         separate_dynamic_friction=env_cfg.sim2real.separate_dynamic_friction,
     )
 
-    env.reset()
-    opt.update_simulator(articulation, sim_joint_ids, initial_dof_pos)
-
-    counter = 0
-    # simulate environment
-    while simulation_app.is_running():
-        # run everything in inference mode
-        with torch.inference_mode():
-            # compute zero actions
-            opt.tell(env.unwrapped.scene.articulations["robot"].data.joint_pos[:, sim_joint_ids], measured_dof_pos[counter, :].unsqueeze(0).repeat(env.unwrapped.num_envs, 1))
-            actions = torch.zeros(env.action_space.shape, device=env.unwrapped.device)
-            actions[:, sim_joint_ids] = target_dof_pos[counter, :].unsqueeze(0).repeat(env.unwrapped.num_envs, 1)
-            # apply actions
-            env.step(actions)
-            counter += 1
-            if counter % 400 == 0:
-                print(f"[INFO]: Step {counter * sim_dt:.1f} / {time_data[-1]:.1f} seconds ({counter / time_steps * 100:.1f} %)")
-            if counter >= time_steps:
-                print("[INFO]: Reached the end of the trajectory, exiting.")
-                counter = 0
-                opt.evolve()
-                if opt.finished():
-                    break
-                env.reset()
-                opt.update_simulator(env.unwrapped.scene["robot"], sim_joint_ids, initial_dof_pos)
+    # simulate environment until the optimizer converged or the app is closed
+    fit(backend, opt, data, should_continue=simulation_app.is_running)
     # close optimizer
     opt.close()
     # close the simulator
-    env.close()
+    backend.close()
 
 
 if __name__ == "__main__":

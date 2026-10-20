@@ -19,6 +19,8 @@ from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
+from pace_sim2real.core.parameters import extend_bounds_with_friction_ratio
+
 from . import mdp
 
 
@@ -127,14 +129,7 @@ class PaceCfg:
         """Extend the parameter bounds by the dynamic to static friction ratios."""
         if not self.separate_dynamic_friction:
             return
-        num_joints = len(self.joint_order)
-        num_params = self.bounds_params.shape[0]
-        num_before = 4 * num_joints + 1
-        if num_params == num_before:
-            ratio_bounds = torch.tensor(self.friction_ratio_bounds, dtype=self.bounds_params.dtype).repeat(num_joints, 1)
-            self.bounds_params = torch.cat([self.bounds_params, ratio_bounds], dim=0)
-        elif num_params != num_before + num_joints:
-            raise ValueError(f"Expected {num_before} or {num_before + num_joints} bounds with separate dynamic friction, got {num_params}.")
+        self.bounds_params = extend_bounds_with_friction_ratio(self.bounds_params, len(self.joint_order), self.friction_ratio_bounds)
 
 ##
 # Environment configuration
