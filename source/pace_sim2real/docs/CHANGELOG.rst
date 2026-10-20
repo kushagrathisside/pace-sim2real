@@ -1,6 +1,46 @@
 Changelog
 ---------
 
+Unreleased
+~~~~~~~~~~
+
+Added
+^^^^^
+
+* Added the simulator-independent core package ``pace_sim2real.core`` with the parameter model, the objective, the
+  CMA-ES optimizer, ``fit()``, the data contract and the validation utilities. The core imports no simulator.
+* Added the simulator backend interface ``pace_sim2real.backends.base.SimulatorBackend``.
+* Added the Isaac Lab backend adapter ``IsaacLabBackend`` in ``pace_sim2real.backends.isaac``.
+* Added the MuJoCo backend ``MujocoBackend`` in ``pace_sim2real.backends.mujoco`` (prototype), with the built-in
+  synthetic robots ``pendulum`` and ``leg``.
+* Added the NumPy reference actuator ``PaceDCMotorModel`` in ``pace_sim2real.backends.actuator``.
+* Added synthetic validation utilities (``synthetic_recovery``, recovery reports) and the MuJoCo scripts
+  ``scripts/pace_mujoco/data_collection.py``, ``scripts/pace_mujoco/fit.py`` and ``scripts/pace_mujoco/benchmark.py``.
+* Added a pytest suite in ``source/pace_sim2real/tests``.
+* Added the ``core``, ``mujoco``, ``tensorboard`` and ``test`` extras to ``setup.py``.
+
+Changed
+^^^^^^^
+
+* ``import pace_sim2real`` no longer imports Isaac Lab. ``PaceCfg``, ``PaceSim2realEnvCfg`` and
+  ``PaceSim2realSceneCfg`` are loaded lazily on first access, and so are ``PaceDCMotorCfg`` and ``PaceDCMotor`` in
+  ``pace_sim2real.utils``. As a consequence, ``import pace_sim2real`` alone no longer registers the Gym environments
+  as a side effect; ``import pace_sim2real.tasks`` does, as all scripts and the documentation already do.
+* ``scripts/pace/fit.py`` uses an ``IsaacLabBackend`` and the core ``fit()`` loop. The command line and the outputs
+  are unchanged.
+* ``CMAESOptimizer`` moved to ``pace_sim2real.core``. The old import path ``pace_sim2real.CMAESOptimizer`` keeps
+  ``update_simulator``.
+* The optimizer checks the bounds before it creates the log directory.
+* TensorBoard is optional.
+
+Fixed
+^^^^^
+
+* ``setup.py`` now installs all subpackages. Previously only the top-level package was listed, which only worked for
+  editable installs.
+* ``CMAESOptimizer.get_best_sim_params`` creates the mean on the device of the bounds.
+
+
 0.2.0 (2026-10-13)
 ~~~~~~~~~~~~~~~~~~
 

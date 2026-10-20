@@ -64,6 +64,21 @@ These warnings are expected and indicate that certain physics properties (e.g. j
 ✅ Recommended: Isaac Sim 5.0 or newer  
 ⚠️ Legacy support: May run with limitations on < 5.0
 
+### Running without Isaac Sim (MuJoCo backend)
+
+The MuJoCo backend (prototype) runs the identification on the CPU without Isaac Sim. From the repository root, with Python 3.10 to 3.12:
+
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+pip install -e "source/pace_sim2real[mujoco,tensorboard,test]"
+
+python scripts/pace_mujoco/data_collection.py --robot pendulum
+python scripts/pace_mujoco/fit.py --robot pendulum
+python scripts/pace/plot_trajectory.py --robot_name mujoco_pendulum --plot_trajectory
+```
+
+See the [simulator backends](docs/backends.md) page for the parameter mapping, the built-in robots and the limitations.
+
 ---
 
 ## 📚 Documentation

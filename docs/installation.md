@@ -1,6 +1,6 @@
 # Installation
 
-This section describes how to install and set up the **PACE (Precise Adaptation through Continuous Evolution)** framework on your system. PACE is built on top of **NVIDIA Isaac Lab** and requires a working GPU-accelerated simulation environment.
+This section describes how to install and set up the **PACE (Precise Adaptation through Continuous Evolution)** framework on your system. PACE is built on top of **NVIDIA Isaac Lab** and requires a working GPU-accelerated simulation environment for the full workflow. A lightweight CPU-only path with the MuJoCo backend is described [below](#lightweight-installation-without-isaac-sim-mujoco-cpu).
 
 ---
 
@@ -92,3 +92,18 @@ Proceed to:
 * **Examples** – run your first experiment
 * **Guids** – how to set up your own robot and tasks
 * **Concepts** – core ideas behind PACE and sim-to-real transfer
+
+---
+
+## Lightweight installation without Isaac Sim (MuJoCo / CPU)
+
+The simulator-independent core and the MuJoCo backend run on the CPU and need neither Isaac Sim nor Isaac Lab. Use Python 3.10 to 3.12 and run the following from the repository root:
+
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+pip install -e "source/pace_sim2real[mujoco,tensorboard,test]"
+```
+
+The extras are `core` (torch, numpy), `mujoco` (torch, numpy, `mujoco>=3.3.4`), `tensorboard` (tensorboard) and `test` (pytest). Isaac Lab users keep the installation above: `python -m pip install -e source/pace_sim2real` is unchanged and no new hard dependency is added.
+
+The MuJoCo backend is a prototype. Its workflow, parameter mapping and limitations are described in [Simulator backends](backends.md).

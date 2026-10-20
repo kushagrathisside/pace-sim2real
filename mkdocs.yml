@@ -37,6 +37,7 @@ nav:
       - Installation: installation.md
       - Importing: importing.md
       - Basic usage: usage.md
+      - Simulator backends: backends.md
   - Examples: 
       - Overview: examples/index.md
       - ANYmal: examples/anymal.md
