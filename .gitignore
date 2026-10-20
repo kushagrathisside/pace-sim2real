@@ -73,3 +73,6 @@ tests/
 
 # PACE specific
 **/data/*
+
+# PACE tests (the Isaac Lab template ignores tests/ above)
+!source/pace_sim2real/tests/
